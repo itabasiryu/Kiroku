@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>チェイス記録</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 16px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1, h2, h3 {
+      margin-bottom: 10px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input[type="number"] {
+      font-size: 24px;
+      width: 120px;
+      text-align: center;
+    }
+    button {
+      font-size: 24px;
+      padding: 12px 20px;
+      width: 100%;
+      max-width: 200px;
+    }
+    .stat-box {
+      margin: 1px 0;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      max-height: 400px;
+    }
+  </style>
+</head>
+<body>
+  <h1>チェイス記録</h1>
+
+  <form method="POST">
+    <div style="display: flex; justify-content: center; gap: 10px;">
+        <div style="display: flex; justify-content: center; gap: 10px;">
+            <button type="button" onclick="changeCount(-1)">－</button>
+            <input type="number" id="countInput" name="count1" value="0" readonly>
+            <button type="button" onclick="changeCount(1)">＋</button>
+          </div>
+    </div>
+    <button type="submit">記録する</button>
+  </form>
+  <script>
+    function changeCount(delta) {
+      const input = document.getElementById('countInput');
+      let value = parseInt(input.value) || 0;
+      value += delta;
+      if (value < 0) value = 0;
+      input.value = value;
+    }
+  </script>
+
+  <div class="stat-box">平均値: {{ avg1 }}</div>
+  <div class="stat-box">最大値: {{ max1 }}</div>
+  <div class="stat-box">最小値: {{ min1 }}</div>
+  <div class="stat-box">最終目標: {{ total1 }} / {{ goal_item1 }}</div>
+
+  <canvas id="lineChart" height="300"></canvas>
+
+  <h2>進捗状況</h2>
+  <div style="display: flex; flex-direction: column; align-items: center;">
+    <canvas id="progressChart" width="200" height="200"></canvas>
+    <div style="margin-top: 10px;">
+      <h3>チェイス数: {{ total1 }} / {{ goal_item1 }}</h3>
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('lineChart').getContext('2d');
+    const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ dates | tojson }},
+    datasets: [{
+      label: 'チェイス数',
+      data: {{ item1 | tojson }},
+      fill: false,
+      borderColor: 'green',
+      tension: 0.2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        min: 0   // ← ここでY軸の最小値を0に固定
+      }
+    }
+  }
+});
+
+
+    const donutCtx = document.getElementById('progressChart').getContext('2d');
+    const remaining = {{ remaining }};
+    const completed = {{ total1 }};
+
+    new Chart(donutCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['達成', '残り'],
+        datasets: [{
+          data: [completed, remaining],
+          backgroundColor: ['green', '#e0e0e0'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: {
+          tooltip: { enabled: true },
+          legend: { display: false }
+        },
+        responsive: true,
+        maintainAspectRatio: false
+      },
+      plugins: [{
+        id: 'doughnutLabel',
+        beforeDraw(chart) {
+          const {width, height, ctx} = chart;
+          ctx.restore();
+          ctx.font = '24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${remaining}`, width / 2, height / 2 - 10);
+          ctx.font = '14px sans-serif';
+          ctx.fillStyle = 'gray';
+          ctx.fillText('残り', width / 2, height / 2 + 15);
+          ctx.save();
+        }
+      }]
+    });
+  </script>
+</body>
+</html>
