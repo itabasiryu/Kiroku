@@ -2,10 +2,11 @@ from flask import Flask, render_template, request, redirect
 import os
 import csv
 from datetime import datetime
+from zoneinfo import ZoneInfo  # 追加
 
 app = Flask(__name__)
 DATA_FILE = 'data.csv'
-goal_item1 = 1000  # 最終目標
+goal_item1 = 500  # 最終目標
 
 # データ初期化
 if not os.path.exists(DATA_FILE):
@@ -23,7 +24,8 @@ def load_data():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    today = datetime.now().strftime('%m/%d')
+    jst = ZoneInfo("Asia/Tokyo")  # 日本時間
+    today = datetime.now(jst).strftime('%m/%d')
     data = load_data()
 
     if request.method == 'POST':
